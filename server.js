@@ -1,6 +1,6 @@
 require("dotenv").config();
 const express = require("express");
-const pool = require("./database");
+//const pool = require("./database");
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
@@ -12,6 +12,15 @@ function formatTask(task) {
         completed: Boolean(task.completed),
     };
 }
+class Animal{
+  constructor(name, numLegs){
+    this.name = name.toUpperCase();
+    this.numLegs = numLegs;
+  }
+}
+
+const animals = [new Animal("Dog", 4),  new Animal("bird", 2), new Animal("spider", 8), new Animal("ant", 6), new Animal("human", 2)]
+console.log(animals)
 
 app.get("/", (request, response) => {
     response.json({
@@ -19,163 +28,178 @@ app.get("/", (request, response) => {
     });
 });
 
+const getAnimals = async (req, res) => {
+  const query = req.query
+  console.log(query)
+  
+  const filteredArray = []
+  for (i = 0; i < animals.length; i++){
+    if (animals[i]. numLegs == query.numLegs){
+      filteredArray.push(animals[i]);
+    }
+    console.log(animals[i]);
+  }
+  console.log(filteredArray)
+  res.json({
+    animals: filteredArray
+  })
+}
+
 // Get all tasks
-app.get("/tasks", async (request, response) => {
-    try {
-        const [tasks] = await pool.query(
-            `SELECT id, title, completed, created_at, updated_at
-             FROM tasks
-             ORDER BY id`
-        );
-        response.json(tasks.map(formatTask));
-    } catch (error) {
-        console.error(error);
-        response.status(500).json({
-            message: "Unable to retrieve tasks",
-        });
-    }
-});
+app.get("/animals", getAnimals)
 
-// Get one task
-app.get("/tasks/:id", async (request, response) => {
-    try {
-        const id = Number(request.params.id);
-        const [tasks] = await pool.execute(
-            `SELECT id, title, completed, created_at, updated_at
-             FROM tasks
-             WHERE id = ?`,
-            [id]
-        );
-        if (tasks.length === 0) {
-            return response.status(404).json({
-                message: "Task not found",
-            });
-        }
-        response.json(formatTask(tasks[0]));
-    } catch (error) {
-        console.error(error);
-        response.status(500).json({
-            message: "Unable to retrieve task",
-        });
-    }
-});
+const addAnimal = async (req, res) => {
+  console.log(req.body)
+  animals.push(
+    new Animal(req.body.name, req.body.numLeg)
+  )
+  res.json({
+    message: "You added an animal"
+  })
+}
 
-// Create a task
-app.post("/tasks", async (request, response) => {
-    try {
-        const { title } = request.body;
-        if (typeof title !== "string" || !title.trim()) {
-            return response.status(400).json({
-                message: "Title is required",
-            });
-        }
-        const [result] = await pool.execute(
-            "INSERT INTO tasks (title) VALUES (?)",
-            [title.trim()]
-        );
-        const [tasks] = await pool.execute(
-            `SELECT id, title, completed, created_at, updated_at
-             FROM tasks
-             WHERE id = ?`,
-            [result.insertId]
-        );
-        response.status(201).json(formatTask(tasks[0]));
-    } catch (error) {
-        console.error(error);
-        response.status(500).json({
-            message: "Unable to create task",
-        });
-    }
-});
 
-// Update a task
-app.put("/tasks/:id", async (request, response) => {
-    try {
-        const id = Number(request.params.id);
-        const { title, completed } = request.body;
+app.post("/animals", addAnimal)
+// // Get one task
+// app.get("/tasks/:id", async (request, response) => {
+//     try {
+//         const id = Number(request.params.id);
+//         const [tasks] = await pool.execute(
+//             `SELECT id, title, completed, created_at, updated_at
+//              FROM tasks
+//              WHERE id = ?`,
+//             [id]
+//         );
+//         if (tasks.length === 0) {
+//             return response.status(404).json({
+//                 message: "Task not found",
+//             });
+//         }
+//         response.json(formatTask(tasks[0]));
+//     } catch (error) {
+//         console.error(error);
+//         response.status(500).json({
+//             message: "Unable to retrieve task",
+//         });
+//     }
+// });
 
-        const [existingTasks] = await pool.execute(
-            "SELECT id, title, completed FROM tasks WHERE id = ?",
-            [id]
-        );
-        if (existingTasks.length === 0) {
-            return response.status(404).json({
-                message: "Task not found",
-            });
-        }
+// // Create a task
+// app.post("/tasks", async (request, response) => {
+//     try {
+//         const { title } = request.body;
+//         if (typeof title !== "string" || !title.trim()) {
+//             return response.status(400).json({
+//                 message: "Title is required",
+//             });
+//         }
+//         const [result] = await pool.execute(
+//             "INSERT INTO tasks (title) VALUES (?)",
+//             [title.trim()]
+//         );
+//         const [tasks] = await pool.execute(
+//             `SELECT id, title, completed, created_at, updated_at
+//              FROM tasks
+//              WHERE id = ?`,
+//             [result.insertId]
+//         );
+//         response.status(201).json(formatTask(tasks[0]));
+//     } catch (error) {
+//         console.error(error);
+//         response.status(500).json({
+//             message: "Unable to create task",
+//         });
+//     }
+// });
 
-        const currentTask = existingTasks[0];
-        let updatedTitle = currentTask.title;
-        let updatedCompleted = Boolean(currentTask.completed);
+// // Update a task
+// app.put("/tasks/:id", async (request, response) => {
+//     try {
+//         const id = Number(request.params.id);
+//         const { title, completed } = request.body;
 
-        if (title !== undefined) {
-            if (typeof title !== "string" || !title.trim()) {
-                return response.status(400).json({
-                    message: "Title must be a non-empty string",
-                });
-            }
-            updatedTitle = title.trim();
-        }
-        if (completed !== undefined) {
-            if (typeof completed !== "boolean") {
-                return response.status(400).json({
-                    message: "Completed must be a boolean",
-                });
-            }
-            updatedCompleted = completed;
-        }
+//         const [existingTasks] = await pool.execute(
+//             "SELECT id, title, completed FROM tasks WHERE id = ?",
+//             [id]
+//         );
+//         if (existingTasks.length === 0) {
+//             return response.status(404).json({
+//                 message: "Task not found",
+//             });
+//         }
 
-        await pool.execute(
-            `UPDATE tasks
-             SET title = ?, completed = ?
-             WHERE id = ?`,
-            [updatedTitle, updatedCompleted, id]
-        );
+//         const currentTask = existingTasks[0];
+//         let updatedTitle = currentTask.title;
+//         let updatedCompleted = Boolean(currentTask.completed);
 
-        const [tasks] = await pool.execute(
-            `SELECT id, title, completed, created_at, updated_at
-             FROM tasks
-             WHERE id = ?`,
-            [id]
-        );
-        response.json(formatTask(tasks[0]));
-    } catch (error) {
-        console.error(error);
-        response.status(500).json({
-            message: "Unable to update task",
-        });
-    }
-});
+//         if (title !== undefined) {
+//             if (typeof title !== "string" || !title.trim()) {
+//                 return response.status(400).json({
+//                     message: "Title must be a non-empty string",
+//                 });
+//             }
+//             updatedTitle = title.trim();
+//         }
+//         if (completed !== undefined) {
+//             if (typeof completed !== "boolean") {
+//                 return response.status(400).json({
+//                     message: "Completed must be a boolean",
+//                 });
+//             }
+//             updatedCompleted = completed;
+//         }
 
-// Delete a task
-app.delete("/tasks/:id", async (request, response) => {
-    try {
-        const id = Number(request.params.id);
-        const [result] = await pool.execute(
-            "DELETE FROM tasks WHERE id = ?",
-            [id]
-        );
-        if (result.affectedRows === 0) {
-            return response.status(404).json({
-                message: "Task not found",
-            });
-        }
-        response.json({
-            message: "Task deleted successfully",
-        });
-    } catch (error) {
-        console.error(error);
-        response.status(500).json({
-            message: "Unable to delete task",
-        });
-    }
-});
+//         await pool.execute(
+//             `UPDATE tasks
+//              SET title = ?, completed = ?
+//              WHERE id = ?`,
+//             [updatedTitle, updatedCompleted, id]
+//         );
+
+//         const [tasks] = await pool.execute(
+//             `SELECT id, title, completed, created_at, updated_at
+//              FROM tasks
+//              WHERE id = ?`,
+//             [id]
+//         );
+//         response.json(formatTask(tasks[0]));
+//     } catch (error) {
+//         console.error(error);
+//         response.status(500).json({
+//             message: "Unable to update task",
+//         });
+//     }
+// });
+
+// // Delete a task
+// app.delete("/tasks/:id", async (request, response) => {
+//     try {
+//         const id = Number(request.params.id);
+//         const [result] = await pool.execute(
+//             "DELETE FROM tasks WHERE id = ?",
+//             [id]
+//         );
+//         if (result.affectedRows === 0) {
+//             return response.status(404).json({
+//                 message: "Task not found",
+//             });
+//         }
+//         response.json({
+//             message: "Task deleted successfully",
+//         });
+//     } catch (error) {
+//         console.error(error);
+//         response.status(500).json({
+//             message: "Unable to delete task",
+//         });
+//     }
+// });
 
 async function startServer() {
     try {
-        const connection = await pool.getConnection();
-        console.log("Connected to MySQL successfully");
-        connection.release();
+        //const connection = await pool.getConnection();
+        //console.log("Connected to MySQL successfully");
+        //connection.release();
         app.listen(PORT, () => {
             console.log(`Server is running at http://localhost:${PORT}`);
         });
