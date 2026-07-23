@@ -12,14 +12,23 @@ function formatTask(task) {
         completed: Boolean(task.completed),
     };
 }
+
+let nextId = 1;
+
 class Animal{
   constructor(name, numLegs){
+    this.id = nextId++;
     this.name = name.toUpperCase();
     this.numLegs = numLegs;
   }
 }
 
-const animals = [new Animal("Dog", 4),  new Animal("bird", 2), new Animal("spider", 8), new Animal("ant", 6), new Animal("human", 2)]
+const animals = [new Animal("Dog", 4),
+   new Animal("bird", 2),
+   new Animal("spider", 8), 
+   new Animal("ant", 6), 
+   new Animal("human", 2)];
+
 console.log(animals)
 
 app.get("/", (request, response) => {
@@ -31,10 +40,13 @@ app.get("/", (request, response) => {
 const getAnimals = async (req, res) => {
   const query = req.query
   console.log(query)
-  
+
+  if (query.numLegs === undefined) {
+    return res.json({ animals });
+  }
   const filteredArray = []
-  for (i = 0; i < animals.length; i++){
-    if (animals[i]. numLegs == query.numLegs){
+  for (let i = 0; i < animals.length; i++){
+    if (animals[i].numLegs == query.numLegs){
       filteredArray.push(animals[i]);
     }
     console.log(animals[i]);
@@ -47,19 +59,53 @@ const getAnimals = async (req, res) => {
 
 // Get all tasks
 app.get("/animals", getAnimals)
+// GET /animal/:id
+app.get("/animal/:id", (req, res) => {
+  const id = Number(req.params.id);
+  const animal = animals.find(a => a.id === id);
+  if (!animal) {
+    return res.status(404).json({ message: "Animal not found" });
+  }
+  res.json(animal);
+});
 
 const addAnimal = async (req, res) => {
   console.log(req.body)
-  animals.push(
-    new Animal(req.body.name, req.body.numLeg)
-  )
+  animals.push(new Animal(req.body.name, req.body.numLegs))
   res.json({
     message: "You added an animal"
   })
 }
-
-
 app.post("/animals", addAnimal)
+//PUT /animals/:id
+app.put("/animals/:id", (req, res) => {
+  const id = Number(req.params.id);
+  const { name, numLegs } = req.body;
+  const animal = animals.find(a => a.id === id);
+  if (!animal) {
+    return res.status(404).json({ message: "Animal not found" });
+  }
+  if (name !== undefined) animal.name = name.toUpperCase();
+  if (numLegs !== undefined) animal.numLegs = numLegs;
+  res.json({
+    message: "Animal updated",
+    animal
+  });
+});
+
+// DELETE /animals/:id
+app.delete("/animals/:id", (req, res) => {
+  const id = Number(req.params.id);
+  const index = animals.findIndex(a => a.id === id);
+  if (index === -1) {
+    return res.status(404).json({ message: "Animal not found" });
+  }
+  const removed = animals.splice(index, 1)[0];
+  res.json({
+    message: "Animal deleted",
+    animal: removed
+  });
+});
 // // Get one task
 // app.get("/tasks/:id", async (request, response) => {
 //     try {
