@@ -1,9 +1,11 @@
 require("dotenv").config();
 const express = require("express");
+const cors = require("cors");
 const pool = require("./database");
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
+app.use(cors()); 
 app.use(express.json());
 
 function formatTask(task) {
