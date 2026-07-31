@@ -1,7 +1,8 @@
-require("dotenv").config();
-const express = require("express");
-const cors = require("cors");
-const pool = require("./database");
+import "dotenv/config";
+import express from "express";
+import cors from "cors";
+import {pool} from "./database.js";
+import animalController from "./controller.js";
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
@@ -22,24 +23,7 @@ app.get("/", (request, response) => {
     });
 });
 
-app.get("/animals", async (req, res) => {
-    try {
-        const { numLegs } = req.query;
-        let sql = "SELECT * FROM animals";
-        const params = [];
-
-        if (numLegs !== undefined) {
-            sql += " WHERE numLegs = ?";
-            params.push(numLegs);
-        }
-
-        const [rows] = await pool.execute(sql, params);
-        res.json({ animals: rows });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Unable to retrieve animals" });
-    }
-});
+app.get("/animals", animalController.getAllAnimals);
 
 app.get("/animal/:id", async (req, res) => {
     try {

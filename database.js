@@ -1,6 +1,6 @@
-const mysql = require("mysql2/promise");
+import mysql from "mysql2/promise";
 
-const pool = mysql.createPool({
+export const pool = mysql.createPool({
   host: process.env.DB_HOST,
   port: Number(process.env.DB_PORT),
   user: process.env.DB_USER,
@@ -14,5 +14,3 @@ const pool = mysql.createPool({
     rejectUnauthorized: false   // For simplicity (skip certificate verification)
   }
 });
-
-module.exports = pool;
