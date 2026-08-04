@@ -1,6 +1,8 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import path from "path";
+import { fileURLToPath} from "url";
 import {pool} from "./database.js";
 import animalController from "./controller.js";
 import authRoutes from "./authRoutes.js";
@@ -19,8 +21,8 @@ app.get("/", (request, response) => {
     });
 });
 
-app.get("/animals", animalController.getAllAnimals);
-app.get("/animal/:id", animalController.getAnimalById);
+app.get("/animals", authenticateToken, animalController.getAllAnimals);
+app.get("/animal/:id", authenticateToken, animalController.getAnimalById);
 app.post("/animals", authenticateToken, animalController.createAnimal);
 app.put("/animals/:id", authenticateToken, animalController.updateAnimal);
 app.delete("/animals/:id", authenticateToken, animalController.deleteAnimal);

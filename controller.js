@@ -1,11 +1,13 @@
 import {pool} from "./database.js";
 import { AnimalModel } from "./model.js";
+
 const animalModel = new AnimalModel(pool);
 
 const getAllAnimals = async (req, res) => {
-    try { const animalModel = new AnimalModel(pool);
+    try { 
+        const userId = req.user.sub;
         const { numLegs } = req.query;
-        const rows = await animalModel.getAllAnimals(numLegs)
+        const rows = await animalModel.getAllAnimals(userId, numLegs)
         res.json({ animals: rows });
     } catch (error) {
         console.error(error);
@@ -16,7 +18,8 @@ const getAllAnimals = async (req, res) => {
 const getAnimalById = async (req, res) => {
     try {
         const id = Number(req.params.id);
-        const animal = await animalModel.getAnimalById(id);
+        const userId = req.user.sub;
+        const animal = await animalModel.getAnimalById(id, userId);
 
         if (!animal) {
             return res.status(404).json({ message: "Animal not found" });
@@ -31,15 +34,16 @@ const getAnimalById = async (req, res) => {
 
 const createAnimal = async (req, res) => {
     try {
-        let { name, numLegs } = req.body;
+        const userId = req.user.sub;
 
+        let { name, numLegs } = req.body;
         if (!name || numLegs === undefined) {
             return res.status(400).json({ message: "name and numLegs are required" });
         }
-        name = name.toUpperCase();
 
-        const insertId = await animalModel.createAnimal(name, numLegs);
-        const newAnimal = await animalModel.getAnimalById(insertId);
+        name = name.toUpperCase();
+        const insertId = await animalModel.createAnimal(name, numLegs, userId);
+        const newAnimal = await animalModel.getAnimalById(insertId, userId);
 
         res.status(201).json({
             message: "You added an animal",
@@ -54,10 +58,12 @@ const createAnimal = async (req, res) => {
 const updateAnimal = async (req, res) => {
     try {
         const id = Number(req.params.id);
+        const userId = req.user.sub;
         const { name, numLegs } = req.body;
-        const existing = await animalModel.getAnimalById(id);
+
+        const existing = await animalModel.getAnimalById(id, userId);
         if (!existing) {
-            return res.status(404).json({ message: "Animal not found" });
+            return res.status(404).json({ message: "Animal not found or you don't have permission" });
         }
         const fields = {};
         if (name !== undefined) fields.name = name.toUpperCase();
@@ -67,8 +73,8 @@ const updateAnimal = async (req, res) => {
             return res.status(400).json({ message: "No fields to update" });
         }
 
-        await animalModel.updateAnimal(id, fields);
-        const updatedAnimal = await animalModel.getAnimalById(id);
+        await animalModel.updateAnimal(id, fields, userId);
+        const updatedAnimal = await animalModel.getAnimalById(id, userId);
 
         res.json({
             message: "Animal updated",
@@ -83,10 +89,12 @@ const updateAnimal = async (req, res) => {
 const deleteAnimal = async (req, res) => {
     try {
         const id = Number(req.params.id);
-        const deleted = await animalModel.deleteAnimal(id);
+        const userId = req.user.sub;
+
+        const deleted = await animalModel.deleteAnimal(id, userId);
 
         if (!deleted) {
-            return res.status(404).json({ message: "Animal not found" });
+            return res.status(404).json({ message: "Animal not found or you don't have permission" });
         }
 
         res.json({ message: "Animal deleted" });
