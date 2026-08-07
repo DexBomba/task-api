@@ -11,7 +11,26 @@ import authenticateToken from "./authMiddleware.js";
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
-app.use(cors()); 
+// ==========================================
+// 🔐 SECURITY HEADERS
+// ==========================================
+app.disable('x-powered-by');
+// @ts-ignore
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', "nosniff");
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  next();
+});
+
+// ==========================================
+// 🌐 CORS (Restricted to Frontend Only)
+// ==========================================
+const corsOptions = {
+  origin: ['https://frontendfortask-api.onrender.com', 'http://localhost:5500'],
+  optionsSuccessStatus: 200
+};
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use("/auth", authRoutes);
 
